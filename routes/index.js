@@ -49,6 +49,7 @@ router.get('/', function(req, res, next) {
     sql += ` ORDER BY id ASC LIMIT 3 OFFSET 0`;
     db.query(sql, (err, rowsFilt) => {
       if (err) {res.status(400).json({ "error": err.message });return;}
+      // res.json(rowsFilt.rows);
       res.render('pages/index', {
         data: rowsFilt.rows,
         current: page,
@@ -124,31 +125,8 @@ router.get('/:page', function(req, res, next) {
 
 router.get('/edit/:id', (req, res) => {
   const { id } = req.params;
-  var sql = `SELECT * FROM datatype WHERE id = ${id}`;
-  db.query(sql, (err, result) => {
-    if (err) {
-      return console.log(err.message);
-    } else {
-      console.log(result.rows);
-      res.render('pages/edit', {
-        data: result.rows
-      });
-    }
-  });
+  res.render('pages/edit', {data: id})
 });
-
-router.get('/delete/:id', (req, res) => {
-  const { id } = req.params;
-  var sql = `DELETE FROM datatype WHERE id = ${id}`;
-  db.query(sql, function (err) {
-    if (err) {
-      return console.log(err.message);
-    } else {
-      res.redirect('/');
-    }
-  });
-});
-
 
 //POST
 router.post('/add', (req, res) => {

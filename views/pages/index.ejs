@@ -1,9 +1,10 @@
 <%- include('../partials/head'); %>
+
 <body>
-    <div class="container" style="margin-top: 30px;">
+    <ul class="container" style="margin-top: 30px;">
         <h1>BREAD (Browse, Read, Edit, Add, Delete)</h1>
         <h4>Filters</h4>
-        <form action="/" method="GET">
+        <form id='search-data'>
             <div class="form-group row">
                 <label for="inputPassword" class="col-sm-2 col-form-label">
                     <input type="checkbox" id="checked_id" name="checked_id" value="true"> ID
@@ -66,7 +67,7 @@
                 <p><input type="submit" class="btn btn-primary" value="Search" /></p>
             </div>
         </form>
-        <table class="table table-striped">
+        <table class="table table-striped" id="table-data">
             <thead>
                 <tr>
                     <th scope="col">ID</th>
@@ -78,65 +79,341 @@
                     <th scope="col">Aksi</th>
                 </tr>
             </thead>
-            <tbody>
-                <% data.forEach(d => { 
-                    var tgl = new Date(d.date);
-                    var month = new Array();
-                    month[0] = "Januari";
-                    month[1] = "Februari";
-                    month[2] = "Maret";
-                    month[3] = "April";
-                    month[4] = "Mei";
-                    month[5] = "Juni";
-                    month[6] = "Juli";
-                    month[7] = "Agustus";
-                    month[8] = "September";
-                    month[9] = "Oktober";
-                    month[10] = "November";
-                    month[11] = "Desember";
-                    var bulan_indo = month[tgl.getMonth()];
-                    var tgl_full = tgl.getDate() + ' ' + bulan_indo + ' ' + tgl.getFullYear();
-                    %>
-                <tr>
-                    <th scope="row"><%= d.id %></th>
-                    <td><%= d.string %></td>
-                    <td><%= d.integer %></td>
-                    <td><%= d.float %></td>
-                    <td><%= d.date != "" ? tgl_full : "kosong" %></td>
-                    <td><%= d.boolean == 1 ? 'True' : 'False' %></td>
-                    <td>
-                        <a href="/edit/<%= d.id %>" class="btn btn-success">Edit</a>
-                        <a href="/delete/<%= d.id %>" class="btn btn-danger"
-                            onclick="return confirm('Delete ?')">Delete</a>
-                    </td>
-                </tr>
-                <% }) %>
-            </tbody>
+            <tbody></tbody>
         </table>
-        <% if(pages > 0) { %>
-            <ul class="pagination">
-                <% if(current == 1) { %>
-                    <li class="page-item" disabled><a class="page-link">Previous</a></li>
-                <% }else{ %>
-                    <li class="page-item"><a class="page-link" href="<%= previous_page %><%= filter %>">Previous</a></li>    
-                <% } %>
+        <ul class="pagination"></ul>
+        <br>
+        <!------------------------- add button ------------------------------->
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addModal">Add</button>
+        <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Add Data</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="data-form">
+                        <div class="modal-body">
+                            <div class="form-group row">
+                                <label for="inputString" class="col-sm-2 col-form-label">String</label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control" name="string" id="string"
+                                        placeholder="String">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputInteger" class="col-sm-2 col-form-label">Integer</label>
+                                <div class="col-sm-10">
+                                    <input type="number" class="form-control" name="integer" id="integer"
+                                        placeholder="Integer">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputFloat" class="col-sm-2 col-form-label">Float</label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control" name="float" id="float" placeholder="Float">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputDate" class="col-sm-2 col-form-label">Date</label>
+                                <div class="col-sm-10">
+                                    <input type="date" class="form-control" name="date" id="date"
+                                        placeholder="End date">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="selectBoolean" class="col-sm-2 col-form-label">Boolean</label>
+                                <div class="col-sm-10">
+                                    <select class="form-control" name="boolean" id="boolean">
+                                        <option>Choose the boolean ...</option>
+                                        <option value="1">True</option>
+                                        <option value="0">False</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <input type="submit" class="btn btn-primary" value="Save" />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!------------------------- end add button ------------------------------->
+        <!-- Jquery -->
+        <script type="text/javascript">
 
-                <% for(let i = 1; i <= pages; i++){ 
-                    if(i == current) { %>
-                        <li class="page-item active"><a class="page-link"><%= i %></a></li>
-                    <% } else { %>
-                        <li class="page-item"><a class="page-link" href="/<%= i %><%= filter %>"><%= i %></a></li>
-                    <% } %>
-                <% } %>
+            const API_URL = "http://localhost:3000/api/index";
+
+            $(document).ready(function () {
+                listData(1); // untuk menampilkan list data
+                tambahData(); // untuk add data
+                editData(); // edit data dengan
+
+                // $('#inputId').on('keyup', function(){
+                //     var val = $(this).val().toLowerCase();
+                //     $('#table-data tbody tr').filter(function(){
+                //         $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1)
+                //     });
+                // })
+
+                //Delete data
+                $("table tbody").on("click", "#delete-btn", function () {
+                    console.log($(this).attr("data-id"));
+                    if (confirm("Are you sure ?")) {
+                        deleteData($(this).attr("data-id"));
+                    }
+                    return false;
+                })
                 
-                <% if(current == pages) { %>
-                    <li class="page-item" disabled><a class="page-link">Next</a></li>
-                <% }else{ %>
-                    <li class="page-item"><a class="page-link" href="/<%= next_page %><%= filter %>">Next</a></li>    
-                <% } %>
-            </ul>
-        <% } %>
-        <a href="/add" class="btn btn-primary">Add</a>
-    </div>
+                // $("#search-data").on("submit", function (e) {
+                //     var data = $(this).serialize();
+                //     alert(data)
+                // })
+            });
+
+            const listData = (page) => {
+                var url_catch = $(location).attr('search');
+                console.log(url_catch);
+                $.ajax({
+                    url: `${API_URL}/${page}/${url_catch}`,
+                    type: 'get',
+                    dataType: 'json'
+                }).done(function (data) {
+                    var dataTrue = data.data;
+                    let html = '';
+                    dataTrue.forEach(d => {
+                        var tgl = new Date(d.date);
+                        var bulan_indo = bln_indo(tgl.getMonth());
+                        var tgl_full = tgl.getDate() + ' ' + bulan_indo + ' ' + tgl.getFullYear();
+                        let tanggal = d.date != "" ? tgl_full : "kosong";
+                        html += `<tr>
+                        <th scope="row">${d.id}</th>
+                        <td>${d.string}</td>
+                        <td>${d.integer}</td>
+                        <td>${d.float}</td>
+                        <td>${tanggal}</td>
+                        <td>${d.boolean}</td>
+                        <td>
+                            <button data-id = "${d.id}" type="button" id="edit-btn" class="btn btn-success">Edit</button>
+                            <button data-id = "${d.id}" type="button" id="delete-btn" class="btn btn-danger">Delete</button>
+                        </td>
+                    </tr>`
+                    });
+                    $('table tbody').html(html)
+                    //---------------------------------Pagination ---------------------------------------------
+                    let pagePrevious = '';
+                    if (data.current == 1) {
+                        pagePrevious += `<li class="page-item" disabled><a class="page-link">Previous</a></li>`
+                    } else {
+                        pagePrevious += `<li class="page-item"><button data-id = "${data.previous_page}" type="button" id="page-btn" class="page-link">Previous</button></li> `
+                    }
+                    for (let i = 1; i <= data.pages; i++) {
+                        if (i == data.current) {
+                            pagePrevious += `<li class="page-item active"><button type="button" id="page-btn" class="page-link">${i}</button></li>`
+                        } else {
+                            pagePrevious += `<li class="page-item"><button data-id = "${i}" type="button" id="page-btn" class="page-link">${i}</button></li>`
+                        }
+                    }
+                    if (data.current == data.pages) {
+                        pagePrevious += `<li class="page-item" disabled><a class="page-link">Next</a></li>`
+                    } else {
+                        pagePrevious += `<li class="page-item"><button data-id = "${data.next_page}" type="button" id="page-btn" class="page-link">Next</button></li>`
+                    }
+                    $('.pagination').html(pagePrevious)
+                    $("ul li").on("click", "#page-btn", function () {
+                        const id = $(this).attr('data-id');
+                        listData(id);
+                    })
+                    //--------------------------------- End Pagination ---------------------------------------
+                }).fail(function (jqXHR, textStatus) {
+                    alert("Request failed get data: " + textStatus);
+                })
+            };
+
+            const editData = () => {
+                $("table tbody").on("click", "#edit-btn", function () {
+                    const id = $(this).attr('data-id');
+                    $.ajax({
+                        url: `${API_URL}/edit/${id}`,
+                        method: 'GET',
+                        dataType: 'JSON'
+                    }).done(function (data) {
+                        var dataApi = data.data[0];
+                        var tgl = new Date(dataApi.date);
+                        let month = ("0" + (tgl.getMonth() + 1)).slice(-2);
+                        var date = tgl.getFullYear() + '-' + month + '-' + tgl.getDate()
+                        // console.log(date);
+                        let html = `<div class="container" style="margin-top: 30px;">
+                        <h1>Edit Data</h1>
+                        <form id="data-form-edit">
+                            <div class="form-group row">
+                                <label for="id" class="col-sm-2 col-form-label">ID</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="id" id="id" value="${dataApi.id}" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputString" class="col-sm-2 col-form-label">String</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="string" id="string" value="${dataApi.string}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputInteger" class="col-sm-2 col-form-label">Integer</label>
+                                <div class="col-sm-8">
+                                    <input type="number" class="form-control" name="integer" id="integer" value="${dataApi.integer}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputFloat" class="col-sm-2 col-form-label">Float</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="float" id="float" value="${dataApi.float}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputDate" class="col-sm-2 col-form-label">Date</label>
+                                <div class="col-sm-8">
+                                    <input type="date" class="form-control" name="date" id="date" value="${date}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="selectBoolean" class="col-sm-2 col-form-label">Boolean</label>
+                                <div class="col-sm-8">
+                                    <select class="form-control" name="boolean" id="boolean">
+                                        <option>Choose the boolean ...</option>
+                                        <option value="1" ${dataApi.boolean == '1' ? "selected" : ""}>True</option>
+                                        <option value="0" ${dataApi.boolean == '0' ? "selected" : ""} >False</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <input type="submit" class="btn btn-primary" value="Save"/>
+                            </div>
+                        </form>
+                    </div>`
+                        $('body').html(html);
+                        $('#data-form-edit').on('submit', (e) => {
+                            // console.log('wadidwad')
+                            e.preventDefault();
+                            let id = $('#id');
+                            let string = $('#string');
+                            let integer = $('#integer');
+                            let float = $('#float');
+                            let date = $('#date');
+                            let boolean = $('#boolean');
+
+                            $.ajax({
+                                url: `${API_URL}/edit/${id}`,
+                                method: 'PUT',
+                                data: {
+                                    id: id.val(),
+                                    string: string.val(),
+                                    integer: integer.val(),
+                                    float: float.val(),
+                                    date: date.val(),
+                                    boolean: boolean.val()
+                                }
+                            }).done(function () {
+                                window.location.href = "/";
+                            }).fail(function (jqXHR, textStatus) {
+                                alert("Request failed get data: " + textStatus);
+                            })
+                        })
+                    }).fail(function (jqXHR, textStatus) {
+                        alert("Request failed get data: " + textStatus);
+                    })
+                })
+            }
+
+            const tambahData = () => {
+                $('#data-form').on('submit', (e) => {
+                    e.preventDefault();
+                    let id = $('#id');
+                    let string = $('#string');
+                    let integer = $('#integer');
+                    let float = $('#float');
+                    let date = $('#date');
+                    let boolean = $('#boolean');
+
+                    $.ajax({
+                        url: `${API_URL}/add`,
+                        method: 'POST',
+                        data: {
+                            id: id.val(),
+                            string: string.val(),
+                            integer: integer.val(),
+                            float: float.val(),
+                            date: date.val(),
+                            boolean: boolean.val()
+                        }
+                    }).done(function () {
+                        window.location.href = "/";
+                    }).fail(function (jqXHR, textStatus) {
+                        alert("Request failed get data: " + textStatus);
+                    })
+                })
+            }
+
+            const deleteData = (id) => {
+                $.ajax({
+                    url: `${API_URL}/delete/${id}`,
+                    method: 'DELETE',
+                    dataType: 'json'
+                }).done(function () {
+                    window.location.href = "/";
+                }).fail(function (jqXHR, textStatus) {
+                    alert("Request failed get data: " + textStatus);
+                })
+            }
+
+            function bln_indo(bln) {
+                var month = '';
+                switch (bln) {
+                    case 0:
+                        month = "Januari"
+                        break;
+                    case 1:
+                        month = "Februari"
+                        break;
+                    case 2:
+                        month = "Maret"
+                        break;
+                    case 3:
+                        month = "April"
+                        break;
+                    case 4:
+                        month = "Mei"
+                        break;
+                    case 5:
+                        month = "Juni"
+                        break;
+                    case 6:
+                        month = "Juli"
+                        break;
+                    case 7:
+                        month = "Agustus"
+                        break;
+                    case 8:
+                        month = "September"
+                        break;
+                    case 9:
+                        month = "Oktober"
+                        break;
+                    case 10:
+                        month = "November"
+                        break;
+                    case 11:
+                        month = "Desember"
+                        break;
+                }
+                return month;
+            }
+            
+        </script>
 </body>
 <%- include('../partials/footer'); %>
