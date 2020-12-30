@@ -154,13 +154,6 @@
                 tambahData(); // untuk add data
                 editData(); // edit data dengan
 
-                // $('#inputId').on('keyup', function(){
-                //     var val = $(this).val().toLowerCase();
-                //     $('#table-data tbody tr').filter(function(){
-                //         $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1)
-                //     });
-                // })
-
                 //Delete data
                 $("table tbody").on("click", "#delete-btn", function () {
                     console.log($(this).attr("data-id"));
@@ -169,11 +162,6 @@
                     }
                     return false;
                 })
-                
-                // $("#search-data").on("submit", function (e) {
-                //     var data = $(this).serialize();
-                //     alert(data)
-                // })
             });
 
             const listData = (page) => {

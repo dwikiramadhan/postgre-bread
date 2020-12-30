@@ -3,6 +3,67 @@ var router = express.Router();
 const url = require('url');
 const db = require('../config/dbconfig.js');
 
+router.get('/', function(req, res, next) {
+  const { id, string, integer, float, start_date, end_date, boolean, checked_id, checked_string, checked_integer, checked_float, checked_date, checked_boolean } = req.query;
+  
+  const per_page = 3;
+  const page = req.params.page || 1;
+  const queryObject = url.parse(req.url,true).search;
+
+  var fullUrl = req.search;
+  // console.log(fullUrl);
+
+  let field = [];
+  if (checked_id === "true" && id) {
+    field.push(`id = ${id}`);
+  }
+  if (checked_string === "true" && string) {
+    field.push(`string = '${string}'`);
+  }
+  if (checked_integer === "true" && integer) {
+    field.push(`integer = ${integer}`);
+  }
+  if (checked_float === "true" && float) {
+    field.push(`float = ${float}`);
+  }
+  if (checked_date === "true" && start_date && end_date) {
+    field.push(`date between '${start_date}' and '${end_date}'`);
+  }
+  if (checked_boolean === "true" && boolean) {
+    field.push(`boolean = '${boolean}'`);
+  }
+
+  var sql = `SELECT * FROM datatype`;
+  if (field.length > 0) {
+    sql += ` WHERE `;
+    for (let i = 0; i < field.length; i++) {
+      sql += `${field[i]}`;
+      if (field.length != i+1) {
+        sql += ` OR `;
+      }
+    }
+  }
+
+  // const sql = 'SELECT * FROM datatype ORDER BY id ASC';
+  db.query(sql, (err, rows) => {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    
+    sql += ` ORDER BY id ASC LIMIT 3 OFFSET 0`;
+    db.query(sql, (err, rowsFilt) => {
+      if (err) {res.status(400).json({ "error": err.message });return;}
+      // res.json(rowsFilt.rows);
+      res.json({
+        data: rowsFilt.rows,
+        current: page,
+        filter: queryObject,
+        next_page: parseInt(page) + 1,
+        previous_page: parseInt(page) - 1,
+        pages: Math.ceil(rows.rows.length / per_page)
+      });
+    });
+  })
+});
+
 router.get('/:page', function(req, res, next) {
   const { id, string, integer, float, start_date, end_date, boolean, checked_id, checked_string, checked_integer, checked_float, checked_date, checked_boolean } = req.query;
   
